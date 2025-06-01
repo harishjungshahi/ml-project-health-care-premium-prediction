@@ -47,9 +47,12 @@ def preprocess_input(input_dict):
         'employment_status_Salaried', 'employment_status_Self-Employed'
     ]
 
+    # Initialize dataframe with zeros
     df = pd.DataFrame(0, columns=expected_columns, index=[0])
+
     plan_encoding = {'Bronze': 1, 'Silver': 2, 'Gold': 3}
 
+    # Fill values
     df['age'] = input_dict.get('Age', 0)
     df['number_of_dependants'] = input_dict.get('Number of Dependants', 0)
     df['income_lakhs'] = input_dict.get('Income in Lakhs', 0)
@@ -57,7 +60,7 @@ def preprocess_input(input_dict):
     df['genetical_risk'] = input_dict.get('Genetical Risk', 0)
     df['normalized_risk_score'] = calculate_normalized_risk(input_dict.get('Medical History', 'no disease'))
 
-    # One-hot encodings
+    # One-hot encoding
     if input_dict.get('Gender') == 'Male':
         df['gender_Male'] = 1
     if input_dict.get('Region') in ['Northwest', 'Southeast', 'Southwest']:
@@ -71,11 +74,18 @@ def preprocess_input(input_dict):
     if input_dict.get('Employment Status') in ['Salaried', 'Self-Employed']:
         df[f'employment_status_{input_dict["Employment Status"]}'] = 1
 
-    # Scale features
+    # Scale features safely
     scaler_obj = scaler_young if df['age'].values[0] <= 25 else scaler_rest
     if scaler_obj['scaler'] is not None:
-        cols = scaler_obj['cols_to_scale']
-        df[cols] = scaler_obj['scaler'].transform(df[cols])
+        cols = scaler_obj.get('cols_to_scale', [])
+        valid_cols = [col for col in cols if col in df.columns]
+        if valid_cols:
+            try:
+                df[valid_cols] = scaler_obj['scaler'].transform(df[valid_cols])
+            except Exception as e:
+                print(f"[ERROR] Scaling failed: {e}")
+        else:
+            print("[WARNING] No valid columns to scale.")
 
     return df
 
