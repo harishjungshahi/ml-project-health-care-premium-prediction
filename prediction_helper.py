@@ -1,18 +1,17 @@
 import pandas as pd
 import joblib
 
-# Dummy models and scalers for example (replace with your actual models)
+# Load your actual models and scalers; fallback to dummy if missing
 try:
     model_young = joblib.load("artifacts/model_young.joblib")
     model_rest = joblib.load("artifacts/model_rest.joblib")
     scaler_young = joblib.load("artifacts/scaler_young.joblib")
     scaler_rest = joblib.load("artifacts/scaler_rest.joblib")
 except Exception:
-    # Fallback dummy models for testing import
     model_young = None
     model_rest = None
-    scaler_young = {'cols_to_scale': ['age', 'income_lakhs'], 'scaler': None}
-    scaler_rest = {'cols_to_scale': ['age', 'income_lakhs'], 'scaler': None}
+    scaler_young = {'cols_to_scale': ['age', 'income_level'], 'scaler': None}
+    scaler_rest = {'cols_to_scale': ['age', 'income_level'], 'scaler': None}
 
 def calculate_normalized_risk(medical_history):
     risk_scores = {
@@ -32,7 +31,7 @@ def calculate_normalized_risk(medical_history):
 
 def preprocess_input(input_dict):
     expected_columns = [
-        'age', 'number_of_dependants', 'income_lakhs', 'insurance_plan', 'genetical_risk', 'normalized_risk_score',
+        'age', 'number_of_dependants', 'income_level', 'insurance_plan', 'genetical_risk', 'normalized_risk_score',
         'gender_Male', 'region_Northwest', 'region_Southeast', 'region_Southwest', 'marital_status_Unmarried',
         'bmi_category_Obesity', 'bmi_category_Overweight', 'bmi_category_Underweight', 'smoking_status_Occasional',
         'smoking_status_Regular', 'employment_status_Salaried', 'employment_status_Self-Employed'
@@ -42,6 +41,7 @@ def preprocess_input(input_dict):
     df = pd.DataFrame(0, columns=expected_columns, index=[0])
 
     for key, value in input_dict.items():
+        key_lower = key.lower()
         if key == 'Gender' and value == 'Male':
             df['gender_Male'] = 1
         elif key == 'Region':
@@ -76,20 +76,20 @@ def preprocess_input(input_dict):
             df['age'] = value
         elif key == 'Number of Dependants':
             df['number_of_dependants'] = value
-        elif key == 'Income in Lakhs':
-            df['income_lakhs'] = value
+        elif key == 'income_level':
+            df['income_level'] = value
         elif key == 'Genetical Risk':
             df['genetical_risk'] = value
 
     df['normalized_risk_score'] = calculate_normalized_risk(input_dict.get('Medical History', 'no disease'))
 
-    # Dummy scaling - replace with real scaling if scaler exists
+    # Choose scaler based on age
     if df['age'].values[0] <= 25:
         scaler_obj = scaler_young
     else:
         scaler_obj = scaler_rest
 
-    # Dummy transform if scaler present else do nothing
+    # Apply scaling if scaler present
     if scaler_obj['scaler'] is not None:
         cols = scaler_obj['cols_to_scale']
         df[cols] = scaler_obj['scaler'].transform(df[cols])
@@ -103,11 +103,11 @@ def predict(input_dict):
         if model_young is not None:
             prediction = model_young.predict(input_df)
         else:
-            prediction = [1000]  # dummy prediction
+            prediction = [1000]  # dummy prediction for testing
     else:
         if model_rest is not None:
             prediction = model_rest.predict(input_df)
         else:
-            prediction = [2000]  # dummy prediction
+            prediction = [2000]  # dummy prediction for testing
 
     return int(prediction[0])

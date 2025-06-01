@@ -1,5 +1,6 @@
 import streamlit as st
 from prediction_helper import predict
+import pandas as pd
 
 st.title('Health Insurance Cost Predictor')
 
@@ -17,6 +18,14 @@ categorical_options = {
     ],
     'Insurance Plan': ['Bronze', 'Silver', 'Gold']
 }
+
+def define_income_level(income_lakhs):
+    if income_lakhs <= 2:
+        return 0  # Low income level
+    elif income_lakhs <= 5:
+        return 1  # Medium income level
+    else:
+        return 2  # High income level
 
 row1 = st.columns(3)
 row2 = st.columns(3)
@@ -51,10 +60,13 @@ with row4[1]:
 with row4[2]:
     medical_history = st.selectbox('Medical History', categorical_options['Medical History'])
 
+# Define income_level based on income_lakhs
+income_level = define_income_level(income_lakhs)
+
 input_dict = {
     'Age': age,
     'Number of Dependants': number_of_dependants,
-    'Income in Lakhs': income_lakhs,
+    'income_level': income_level,  # Use the binned income level here
     'Genetical Risk': genetical_risk,
     'Insurance Plan': insurance_plan,
     'Employment Status': employment_status,
@@ -66,6 +78,15 @@ input_dict = {
     'Medical History': medical_history
 }
 
+def safe_predict(input_data):
+    # This function helps debug the dataframe columns inside prediction
+    df = pd.DataFrame([input_data])
+    st.write("Columns in input dataframe:", df.columns.tolist())  # Show columns for debug
+
+    # Call your original predict function
+    prediction = predict(input_data)
+    return prediction
+
 if st.button('Predict'):
-    prediction = predict(input_dict)
+    prediction = safe_predict(input_dict)
     st.success(f'Predicted Health Insurance Cost: ₹{prediction}')
