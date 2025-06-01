@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 # codebasics ML course: codebasics.io, all rights reserverd
+=======
+>>>>>>> a9d3f7b4cce7beb91e698c528a643bd8464ea16e
 
 import pandas as pd
 import joblib
